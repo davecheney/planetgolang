@@ -1,3 +1,7 @@
-{{ range .Entries }}
-{{ template "entry" . }}
-{{ end }}
+<div class="row">
+  <div class="col-md-9">
+    {{ range .Entries }}
+    {{ template "entry" . }}
+    {{ end }}
+  </div>
+</div>
