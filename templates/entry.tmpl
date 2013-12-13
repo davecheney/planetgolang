@@ -1,2 +1,4 @@
-<h1>{{ .Entry.Title }}</h1>
+<h2><a href="{{ url .Feed.Link }}">{{ .Entry.Author.Name }}</a></h2>
+<h3><a href="{{ url .Entry.Link }}">{{ .Entry.Title }}</a></h3>
+<h4>Posted {{ humanize .Time }}</h4>
 {{ pp .Entry.Content.Body }}

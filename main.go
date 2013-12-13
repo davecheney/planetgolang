@@ -13,6 +13,8 @@ import (
 	"github.com/codegangsta/martini"
 	"github.com/codegangsta/martini-contrib/render"
 
+	"github.com/dustin/go-humanize"
+
 	"code.google.com/p/rsc/blog/atom"
 )
 
@@ -75,18 +77,27 @@ func main() {
 		Extensions: []string{".tmpl"},
 		Layout:     "layout",
 		Funcs: []template.FuncMap{{
-			"pp": func(s string) template.HTML { return template.HTML(s) },
+			"pp":       func(s string) template.HTML { return template.HTML(s) },
+			"humanize": humanize.Time,
+			"url": func(l []atom.Link) string {
+				for _, l := range l {
+					return l.Href
+				}
+				return "#"
+			},
 		}},
 	}))
 
-	entries := entries(load())
+	feeds := load()
+	entries := entries(feeds)
 	sort.Sort(entriesByTime(entries))
 
 	m.Get("/index", func(r render.Render) {
 		s := struct {
 			Title   string
 			Entries []*Entry
-		}{"Index", entries}
+			Feeds   []*atom.Feed
+		}{"Index", entries, feeds}
 		r.HTML(200, "index", &s)
 	})
 
