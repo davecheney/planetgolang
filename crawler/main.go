@@ -1,10 +1,10 @@
 package main
 
 import (
+	"encoding/xml"
+	"log"
 	"net/http"
 	"os"
-	"log"
-	"encoding/xml"
 
 	"code.google.com/p/rsc/blog/atom"
 )
@@ -22,4 +22,4 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Println(feed)
-}	
+}
