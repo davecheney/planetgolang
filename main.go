@@ -78,6 +78,7 @@ func main() {
 				return "#"
 			},
 		}},
+		Charset: "utf-8",
 	}))
 
 	feeds := fetch.LoadAll(flag.Args()...)
