@@ -1,0 +1,5 @@
+#!/bin/sh
+
+envdir ./env sh -c '
+	exec $PLANET_HOME/bin/planetgolang -template=$PLANET_HOME/templates -static=$PLANET_HOME/static $FEEDS 2>&1
+'
