@@ -1,18 +1,18 @@
 package main
 
 import (
-	"encoding/xml"
 	"flag"
 	"html/template"
-	"log"
-	"net/http"
 	"path/filepath"
 	"sort"
 	"time"
 
+	"github.com/pkg/math"
+
 	"github.com/codegangsta/martini"
 	"github.com/codegangsta/martini-contrib/render"
 
+	"github.com/davecheney/planetgolang/fetch"
 	"github.com/dustin/go-humanize"
 
 	"code.google.com/p/rsc/blog/atom"
@@ -24,26 +24,6 @@ var (
 )
 
 func init() { flag.Parse() }
-
-func load() []*atom.Feed {
-	var feeds []*atom.Feed
-	for _, url := range flag.Args() {
-		resp, err := http.Get(url)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if resp.StatusCode != 200 {
-			log.Fatal("non 200 response code")
-		}
-		var feed atom.Feed
-		if err := xml.NewDecoder(resp.Body).Decode(&feed); err != nil {
-			log.Fatal(err)
-		}
-		resp.Body.Close()
-		feeds = append(feeds, &feed)
-	}
-	return feeds
-}
 
 type Entry struct {
 	*atom.Feed
@@ -88,16 +68,17 @@ func main() {
 		}},
 	}))
 
-	feeds := load()
+	feeds := fetch.LoadAll(flag.Args()...)
 	entries := entries(feeds)
 	sort.Sort(entriesByTime(entries))
+	entries = entries[:math.Max(len(entries), 10)]
 
 	m.Get("/index", func(r render.Render) {
 		s := struct {
 			Title   string
 			Entries []*Entry
 			Feeds   []*atom.Feed
-		}{"Index", entries, feeds}
+		}{"Planet Golang", entries, feeds}
 		r.HTML(200, "index", &s)
 	})
 
