@@ -4,6 +4,7 @@ import (
 	"flag"
 	"html/template"
 	"path/filepath"
+	"time"
 
 	"github.com/pkg/math"
 
@@ -20,6 +21,7 @@ const ENTRIES_PER_PAGE = 25
 var (
 	staticDir   = flag.String("static", filepath.Join(mustCwd(), "static"), "static asset directory")
 	templateDir = flag.String("template", filepath.Join(mustCwd(), "templates"), "template directory")
+	pollDelay   = flag.Duration("delay", 30*time.Minute, "delay between polling")
 )
 
 func init() { flag.Parse() }
@@ -38,12 +40,12 @@ func main() {
 		Funcs: []template.FuncMap{{
 			"humanize": humanize.Time,
 			"self_url": selfUrlFunc,
-			"alt_url": altUrlFunc,
+			"alt_url":  altUrlFunc,
 		}},
 		Charset: "utf-8",
 	}))
 
-	mod := model.New(flag.Args())
+	mod := model.New(flag.Args(), *pollDelay)
 
 	m.Get("/index", func(r render.Render) {
 		entries := mod.Entries()

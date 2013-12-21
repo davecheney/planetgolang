@@ -13,19 +13,25 @@ import (
 type Model struct {
 	mu      sync.Mutex
 	entries []*Entry
-	feeds	[]*atom.Feed
+	feeds   []*atom.Feed
 }
 
-func New(urls []string) *Model {
+func New(urls []string, delay time.Duration) *Model {
 	var m Model
 	go func() {
-		feeds := m.LoadAll(urls)
-		entries := entries(feeds)
-		sort.Sort(entriesByTime(entries))
-		m.mu.Lock()
-		m.entries = entries
-		m.feeds = feeds
-		m.mu.Unlock()
+		for {
+			t := time.Now()
+			log.Printf("model: starting poll")
+			feeds := m.LoadAll(urls)
+			entries := entries(feeds)
+			sort.Sort(entriesByTime(entries))
+			m.mu.Lock()
+			m.entries = entries
+			m.feeds = feeds
+			m.mu.Unlock()
+			log.Printf("model: poll complete, took %v, sleeping for %v", time.Since(t), delay)
+			time.Sleep(delay)
+		}
 	}()
 	return &m
 }
