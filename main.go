@@ -37,12 +37,8 @@ func main() {
 		Layout:     "layout",
 		Funcs: []template.FuncMap{{
 			"humanize": humanize.Time,
-			"url": func(l []atom.Link) string {
-				for _, l := range l {
-					return l.Href
-				}
-				return "#"
-			},
+			"self_url": selfUrlFunc,
+			"alt_url": altUrlFunc,
 		}},
 		Charset: "utf-8",
 	}))
