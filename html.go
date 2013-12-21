@@ -30,6 +30,7 @@ func sanitise(feed *atom.Feed, t *atom.Text) string {
 // correct all <img> tags to use absolute urls.
 func absoluteImgTag(base *url.URL, n *html.Node) {
 	if n.Type == html.ElementNode && n.Data == "img" {
+		n.Attr = stripClassAttr(n.Attr)
 		for i, a := range n.Attr {
 			if a.Key == "src" {
 				u, err := url.Parse(a.Val)
@@ -44,6 +45,7 @@ func absoluteImgTag(base *url.URL, n *html.Node) {
 				break
 			}
 		}
+		n.Attr = append(n.Attr, html.Attribute{Key: "class", Val: "img-responsive"})
 	}
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		absoluteImgTag(base, c)
