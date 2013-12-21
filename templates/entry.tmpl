@@ -3,4 +3,4 @@
 {{ end }}
 <h3><a href="{{ url .Entry.Link }}">{{ .Entry.Title }}</a></h3>
 <h4>Posted {{ humanize .Time }}</h4>
-{{ pp .Entry.Content.Body }}
+{{ .Content }}

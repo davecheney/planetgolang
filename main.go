@@ -1,22 +1,25 @@
 package main
 
 import (
-	"encoding/xml"
 	"flag"
 	"html/template"
 	"log"
-	"net/http"
 	"path/filepath"
 	"sort"
 	"time"
 
+	"github.com/pkg/math"
+
 	"github.com/codegangsta/martini"
 	"github.com/codegangsta/martini-contrib/render"
 
+	"github.com/davecheney/planetgolang/fetch"
 	"github.com/dustin/go-humanize"
 
 	"code.google.com/p/rsc/blog/atom"
 )
+
+const ENTRIES_PER_PAGE = 25
 
 var (
 	staticDir   = flag.String("static", filepath.Join(mustCwd(), "static"), "static asset directory")
@@ -25,44 +28,34 @@ var (
 
 func init() { flag.Parse() }
 
-func load() []*atom.Feed {
-	var feeds []*atom.Feed
-	for _, url := range flag.Args() {
-		resp, err := http.Get(url)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if resp.StatusCode != 200 {
-			log.Fatal("non 200 response code")
-		}
-		var feed atom.Feed
-		if err := xml.NewDecoder(resp.Body).Decode(&feed); err != nil {
-			log.Fatal(err)
-		}
-		resp.Body.Close()
-		feeds = append(feeds, &feed)
-	}
-	return feeds
-}
-
 type Entry struct {
 	*atom.Feed
 	*atom.Entry
 	time.Time
+	Content template.HTML
 }
 
 func entries(feeds []*atom.Feed) []*Entry {
 	var entries []*Entry
 	for _, feed := range feeds {
 		for _, entry := range feed.Entry {
-			t, err := time.Parse("2006-01-02T15:04:05-07:00", string(entry.Published))
-			if err != nil {
-				//log.Fatal(err)
-			}
-			entries = append(entries, &Entry{feed, entry, t})
+			t := saneDate(entry)
+			body := sanitise(feed, entry.Content)
+			entries = append(entries, &Entry{feed, entry, t, template.HTML(body)})
 		}
 	}
 	return entries
+}
+
+func saneDate(entry *atom.Entry) time.Time {
+	t, err := time.Parse("2006-01-02T15:04:05-07:00", string(entry.Published))
+	if err != nil {
+		t, err = time.Parse("2006-01-02T15:04:05Z", string(entry.Published))
+		if err != nil {
+			log.Print(err)
+		}
+	}
+	return t
 }
 
 func main() {
@@ -77,7 +70,6 @@ func main() {
 		Extensions: []string{".tmpl"},
 		Layout:     "layout",
 		Funcs: []template.FuncMap{{
-			"pp":       func(s string) template.HTML { return template.HTML(s) },
 			"humanize": humanize.Time,
 			"url": func(l []atom.Link) string {
 				for _, l := range l {
@@ -88,16 +80,17 @@ func main() {
 		}},
 	}))
 
-	feeds := load()
+	feeds := fetch.LoadAll(flag.Args()...)
 	entries := entries(feeds)
 	sort.Sort(entriesByTime(entries))
+	entries = entries[:math.Min(len(entries), ENTRIES_PER_PAGE)]
 
 	m.Get("/index", func(r render.Render) {
 		s := struct {
 			Title   string
 			Entries []*Entry
 			Feeds   []*atom.Feed
-		}{"Index", entries, feeds}
+		}{"Planet Golang", entries, feeds}
 		r.HTML(200, "index", &s)
 	})
 
