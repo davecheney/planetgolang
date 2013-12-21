@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"html/template"
+	"log"
 	"path/filepath"
 	"sort"
 	"time"
@@ -37,7 +38,10 @@ func entries(feeds []*atom.Feed) []*Entry {
 		for _, entry := range feed.Entry {
 			t, err := time.Parse("2006-01-02T15:04:05-07:00", string(entry.Published))
 			if err != nil {
-				//log.Fatal(err)
+				t, err = time.Parse("2006-01-02T15:04:05Z", string(entry.Published))
+				if err != nil {
+					log.Printf("%q: %v", feed.ID, err)
+				}
 			}
 			entries = append(entries, &Entry{feed, entry, t})
 		}
