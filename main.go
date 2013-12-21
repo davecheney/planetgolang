@@ -19,6 +19,8 @@ import (
 	"code.google.com/p/rsc/blog/atom"
 )
 
+const ENTRIES_PER_PAGE = 25
+
 var (
 	staticDir   = flag.String("static", filepath.Join(mustCwd(), "static"), "static asset directory")
 	templateDir = flag.String("template", filepath.Join(mustCwd(), "templates"), "template directory")
@@ -38,7 +40,7 @@ func entries(feeds []*atom.Feed) []*Entry {
 	for _, feed := range feeds {
 		for _, entry := range feed.Entry {
 			t := saneDate(entry)
-			body := sanitise(entry.Content)
+			body := sanitise(feed, entry.Content)
 			entries = append(entries, &Entry{feed, entry, t, template.HTML(body)})
 		}
 	}
@@ -68,7 +70,6 @@ func main() {
 		Extensions: []string{".tmpl"},
 		Layout:     "layout",
 		Funcs: []template.FuncMap{{
-			"pp":       func(s string) template.HTML { return template.HTML(s) },
 			"humanize": humanize.Time,
 			"url": func(l []atom.Link) string {
 				for _, l := range l {
@@ -82,7 +83,7 @@ func main() {
 	feeds := fetch.LoadAll(flag.Args()...)
 	entries := entries(feeds)
 	sort.Sort(entriesByTime(entries))
-	entries = entries[:math.Max(len(entries), 10)]
+	entries = entries[:math.Min(len(entries), ENTRIES_PER_PAGE)]
 
 	m.Get("/index", func(r render.Render) {
 		s := struct {
