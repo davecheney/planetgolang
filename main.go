@@ -30,23 +30,30 @@ type Entry struct {
 	*atom.Feed
 	*atom.Entry
 	time.Time
+	Content template.HTML
 }
 
 func entries(feeds []*atom.Feed) []*Entry {
 	var entries []*Entry
 	for _, feed := range feeds {
 		for _, entry := range feed.Entry {
-			t, err := time.Parse("2006-01-02T15:04:05-07:00", string(entry.Published))
-			if err != nil {
-				t, err = time.Parse("2006-01-02T15:04:05Z", string(entry.Published))
-				if err != nil {
-					log.Printf("%q: %v", feed.ID, err)
-				}
-			}
-			entries = append(entries, &Entry{feed, entry, t})
+			t := saneDate(entry)
+			body := sanitise(entry.Content)
+			entries = append(entries, &Entry{feed, entry, t, template.HTML(body)})
 		}
 	}
 	return entries
+}
+
+func saneDate(entry *atom.Entry) time.Time {
+	t, err := time.Parse("2006-01-02T15:04:05-07:00", string(entry.Published))
+	if err != nil {
+		t, err = time.Parse("2006-01-02T15:04:05Z", string(entry.Published))
+		if err != nil {
+			log.Print(err)
+		}
+	}
+	return t
 }
 
 func main() {
