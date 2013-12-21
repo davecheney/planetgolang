@@ -11,7 +11,6 @@ import (
 )
 
 func sanitise(feed *atom.Feed, t *atom.Text) string {
-	log.Printf("Processing content type: %q", t.Type)
 	r := strings.NewReader(t.Body)
 	var w bytes.Buffer
 	n, err := html.Parse(r)
